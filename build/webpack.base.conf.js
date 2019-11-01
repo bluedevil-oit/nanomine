@@ -3,7 +3,7 @@ const path = require('path')
 const utils = require('./utils')
 const config = require('../config')
 const vueLoaderConfig = require('./vue-loader.conf')
-
+const vtkRules = require('vtk.js/Utilities/config/dependency.js').webpack.core.rules
 function resolve (dir) {
   return path.join(__dirname, '..', dir)
 }
@@ -75,7 +75,7 @@ module.exports = {
           name: utils.assetsPath('fonts/[name].[hash:7].[ext]')
         }
       }
-    ]
+    ].concat(vtkRules)
   },
   node: {
     // prevent webpack from injecting useless setImmediate polyfill because Vue

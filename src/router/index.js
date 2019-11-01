@@ -40,7 +40,8 @@ import SDFReconstructResults from '@/components/SDFReconstructResults'
 import CorrelationReconstructResults from '@/components/CorrelationReconstructResults'
 import DescriptorReconstructResults from '@/components/DescriptorReconstructResults'
 import ViewData from '@/components/ViewData'
-import ThreeDModelViewer from '@/components/metamine/ThreeDModelViewer'
+// import ThreeDModelViewer from '@/components/metamine/ThreeDModelViewer'
+import The3DModelViewer from '@/components/metamine/The3DModelViewer'
 // import NmEditor from '@/components/Editor'
 // import Visualization from '@/components/Visualization'
 import ChemProps from '@/components/ChemProps'
@@ -266,10 +267,15 @@ export default new Router({
       name: 'DynamfitResult',
       component: DynamfitResult
     },
+    // {
+    //   path: '/meta/threedmodelviewer',
+    //   name: 'ThreeDModelViewer',
+    //   component: ThreeDModelViewer
+    // },
     {
       path: '/meta/threedmodelviewer',
-      name: 'ThreeDModelViewer',
-      component: ThreeDModelViewer
+      name: 'The3DModelViewer',
+      component: The3DModelViewer
     },
     {
       path: '/ChemProps',
