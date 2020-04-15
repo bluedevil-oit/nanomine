@@ -281,56 +281,58 @@ function createDataset (Datasets, Sequences, logger, dsInfo) { // creates the da
     // 1. create a new dataset, get the _id and set it into the dsInfo.datasetId field
     // 2. If the seq of the dsInfo is set, use it. TODO - Otherwise initialize it to one more than the greatest seq of all the datasets
     //      datasets.findOne().sort('-seq').exec(function err, item){}) - if there are none, set to 101
-    getNextDatasetsSequenceNumber(Sequences, logger)
-      .then(function (dsSeq) {
-        if (dsInfo && dsSeq && dsSeq > 0) {
-          logger.debug(func + ' - Seq: ' + dsSeq + ' dsInfo: ' + inspect(dsInfo))
-          dsInfo.seq = dsSeq
-          dsInfo.isDeleted = false
-          dsInfo.dttm_created = Math.floor(Date.now() / 1000)
-          dsInfo.dttm_updated = Math.floor(Date.now() / 1000)
-          Datasets.create(dsInfo, function (err, doc) {
+    // FIXME: Removed code to auto-generate sequence numbers for a quick upload -- need to ensure that it's re-enabled
+    //    getNextDatasetsSequenceNumber(Sequences, logger)
+    //      .then(function (dsSeq) {
+    if (dsInfo /* && dsSeq && dsSeq > 0 */) { // FIXME: REMOVE COMMENT AFTER QUICK UPLOAD
+      // FIXME logger.debug(func + ' - Seq: ' + dsSeq + ' dsInfo: ' + inspect(dsInfo))
+      logger.debug(func + ' - Seq: ' + dsInfo.seq + ' dsInfo: ' + inspect(dsInfo)) // FIXME
+      //  FIXME dsInfo.seq = dsSeq
+      dsInfo.isDeleted = false
+      dsInfo.dttm_created = Math.floor(Date.now() / 1000)
+      dsInfo.dttm_updated = Math.floor(Date.now() / 1000)
+      Datasets.create(dsInfo, function (err, doc) {
+        if (err) {
+          logger.error(func + ' - datasets create error: ' + err)
+          status.error = err
+          status.data = null
+          status.statusCode = 500
+          reject(status)
+        } else {
+          doc.datasetId = doc._id.toString()
+          doc.dttm_updated = Math.floor(Date.now() / 1000)
+          Datasets.findByIdAndUpdate(doc._id, doc, function (err, olddoc) {
             if (err) {
-              logger.error(func + ' - datasets create error: ' + err)
+              logger.error(func + ' - dataset created, but could not update datasetId: ' + err)
               status.error = err
               status.data = null
               status.statusCode = 500
               reject(status)
             } else {
-              doc.datasetId = doc._id.toString()
-              doc.dttm_updated = Math.floor(Date.now() / 1000)
-              Datasets.findByIdAndUpdate(doc._id, doc, function (err, olddoc) {
-                if (err) {
-                  logger.error(func + ' - dataset created, but could not update datasetId: ' + err)
-                  status.error = err
-                  status.data = null
-                  status.statusCode = 500
-                  reject(status)
-                } else {
-                  status.error = null
-                  status.data = doc
-                  status.statusCode = 201
-                  logger.debug(func + ' - dataset created successfully. _id is: ' + doc._id.toString() + ' datasetId is: ' + doc.datasetId + ' Sequence is: ' + dsInfo.seq)
-                  resolve(status)
-                }
-              })
+              status.error = null
+              status.data = doc
+              status.statusCode = 201
+              logger.debug(func + ' - dataset created successfully. _id is: ' + doc._id.toString() + ' datasetId is: ' + doc.datasetId + ' Sequence is: ' + dsInfo.seq)
+              resolve(status)
             }
           })
-        } else {
-          let err = 'Dataset information not supplied or automatic seq field generation failed'
-          logger.error(func + ' - datasets create error: ' + err)
-          status.error = err
-          status.data = null
-          status.statusCode = 400
-          reject(status)
         }
       })
-  })
-    .catch(function (err) {
+    } else {
+      let err = 'Dataset information not supplied or automatic seq field generation failed'
+      logger.error(func + ' - datasets create error: ' + err)
       status.error = err
       status.data = null
-      status.statusCode = 500
-    })
+      status.statusCode = 400
+      reject(status)
+    }
+  })
+  // }) FIXME - removed for quick upload
+  //   .catch(function (err) {
+  //     status.error = err
+  //     status.data = null
+  //     status.statusCode = 500
+  //   })
 }
 
 function sortSchemas (allActive) { // sort by date descending and choose first
