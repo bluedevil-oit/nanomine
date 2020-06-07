@@ -24,28 +24,26 @@
       </v-alert>
       <v-layout row wrap>
         <v-flex xs12 class="text-xs-center text-sm-center text-md-center text-lg-center">
-          <p class="text-xs-left">Select XML files to upload
+          <dataset-create-or-select selectHeader="Choose or create a dataset" :selectedHandler="datasetSelectedHandler"  :datasetOptions="datasetOptions"></dataset-create-or-select>
+          <p class="text-xs-left">Select XML and image files to upload
             <v-btn class="text-xs-left" small color="primary" @click='pickFile'>Browse</v-btn>
             <input
               type="file"
               style="display: none"
               :multiple="true"
-              accept=".xml"
+              accept=".xml,.tif,.png,.jpeg,.jpg"
               ref="xmlfilebrowser"
               @change="onFilePicked"
             >
           </p>
-          <v-list v-model="xmlFiles" subheader="true">
+          <v-list v-model="files" subheader="true">
             <v-list
-              v-for="(file, idx) in xmlFiles"
+              v-for="(file, idx) in files"
               :key="file.fileName"
             >
-              <v-list-tile
-                v-if="dsInfo(idx)['isFirst']"
-                :key="dsInfo(idx)['dsid']"
-              >
+              <v-list-tile>
                 <v-subheader>
-                  Dataset {{ dsInfo(idx)['dsid'] }}
+                  Dataset {{ dataset._id }}
                 </v-subheader>
                 <v-btn color="primary" @click="selectUseIdForDs(idx)" v-if="!isReassigned(idx)&&!isUseIdForDs(idx)">Use ID for Dataset Sequence</v-btn>
 <!--                <v-btn color="primary" @click="reassign(idx)" v-if="!isReassigned(idx)&&!isUseIdForDs(idx)">Assign new Dataset ID</v-btn>-->
@@ -79,7 +77,6 @@
 <script>
 // import Vue from 'vue'
 import {Auth} from '@/modules/Auth.js'
-// import * as xmljs from 'xml-js'
 import * as _ from 'lodash'
 import Axios from 'axios'
 import {JobMgr} from '@/modules/JobMgr.js'
@@ -98,12 +95,17 @@ export default {
       uploadErrorMsg: '',
       submittedJobAlert: false,
       submittedJobMsg: '',
-      xmlFiles: []
+      datasetOptions: {mineOnly: 'always'},
+      datasetSelected: null,
+      files: []
     }
   },
   beforeMount: function () {
     let vm = this
     vm.auth = new Auth()
+    if (vm.auth.isAdmin()) {
+      vm.datasetOptions.mineOnly = 'false'
+    }
   },
   computed: {
     adminError: function () {
@@ -111,21 +113,30 @@ export default {
     }
   },
   methods: {
-    dsInfo: function (idx) {
+    datasetSelectedHandler (dataset) {
       let vm = this
-      // console.log('idx: ' + JSON.stringify(idx))
-      let dsid = vm.xmlFiles[idx].dsid
-      let isFirst = (idx === 0)
-      if (idx > 0) {
-        isFirst = !(vm.xmlFiles[idx - 1].dsid === dsid)
+      if (dataset) {
+        console.log('Selected dataset: ' + dataset._id)
+      } else {
+        console.log('Selected dataset is null.')
       }
-      let cuType = vm.xmlFiles[idx].cuType
-      return ({
-        dsid: dsid,
-        isFirst: isFirst,
-        createOrUpdateType: cuType
-      })
+      vm.datasetSelected = dataset
     },
+    // dsInfo: function (idx) {
+    //   let vm = this
+    //   // console.log('idx: ' + JSON.stringify(idx))
+    //   let dsid = vm.xmlFiles[idx].dsid
+    //   let isFirst = (idx === 0)
+    //   if (idx > 0) {
+    //     isFirst = !(vm.xmlFiles[idx - 1].dsid === dsid)
+    //   }
+    //   let cuType = vm.xmlFiles[idx].cuType
+    //   return ({
+    //     dsid: dsid,
+    //     isFirst: isFirst,
+    //     createOrUpdateType: cuType
+    //   })
+    // },
     matchValidXmlTitle (title) {
       // console.log('matchValidXmlTitle: ' + title)
       // Evil copy of rest/modules/utils.js version -- need to refactor -- TODO
@@ -170,13 +181,9 @@ export default {
             fr.addEventListener('load', function () {
               file.xml = fr.result
               file.error = false
-              let m = vm.matchValidXmlTitle(file.fileName)
+              let m = vm.matchValidXmlTitle(file.fileName) // TODO: relax this requirement to just .xml at some point
               if (m) {
-                file.dsid = +(m[1])
-              } else {
-                console.log('there is an issue with file: ' + file.fileName + '. The title is invalid.')
-                file.error = true
-                file.dsid = -1
+                file.isXml = true
               }
               // let json = xmljs.xml2js(file.xml)
               // console.log('type of json: ' + typeof json)
@@ -202,14 +209,7 @@ export default {
       console.log('Before waiting loadPromises.length = ' + loadPromises.length)
       Promise.all(loadPromises).then(function (values) {
         console.log('Loading done. files = ' + loadPromises.length)
-        vm.xmlFiles = newFiles.sort(function (a, b) {
-          let dsa = a.dsid
-          let dsb = b.dsid
-          if (+(dsa) < +(dsb)) return -1
-          else if (+(dsa) > +(dsb)) return 1
-          else return 0
-        })
-        window.xmlFiles = vm.xmlFiles
+        window.theUploadFiles = vm.xmlFiles
         vm.resetLoading()
       })
     },
